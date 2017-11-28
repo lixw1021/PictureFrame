@@ -1,6 +1,7 @@
 package com.xianwei.pictureframe;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
@@ -38,7 +39,7 @@ public class CameraActivity  extends Activity {
     private CameraPreview mPreview;
     private MediaRecorder mMediaRecorder;
     private boolean isRecording = false;
-    private byte[] previewImage;
+    private String checkedFrameName = "none";
     @BindView(R.id.button_capture)
     ImageButton captureBtn;
     @BindView(R.id.button_save)
@@ -66,6 +67,8 @@ public class CameraActivity  extends Activity {
         mPreview = new CameraPreview(this, mCamera);
         FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
         preview.addView(mPreview);
+        preview.setForeground(getDrawable(R.drawable.frame_green));
+
     }
 
     @OnClick(R.id.button_capture)
@@ -110,9 +113,11 @@ public class CameraActivity  extends Activity {
 
     @OnClick(R.id.button_add_frame)
     void addFrame(){
-        FrameDialog frameDialog = new FrameDialog(this);
-        frameDialog.show();
-        frameDialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+//        FrameDialog frameDialog = new FrameDialog(this);
+//        frameDialog.show();
+//        frameDialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        FrameDialog frameDialog = FrameDialog.newInstance(checkedFrameName);
+        frameDialog.show(getFragmentManager(),"checkFrame");
     }
 
     /** A safe way to get an instance of the Camera object. */
