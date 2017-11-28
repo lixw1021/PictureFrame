@@ -21,8 +21,6 @@ import static android.content.ContentValues.TAG;
  * A basic Camera preview class
  */
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
-    public static Bitmap mBitmap;
-
     private SurfaceHolder mHolder;
     private static Camera mCamera;
 
@@ -79,18 +77,5 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         } catch (Exception e) {
             Log.d(TAG, "Error starting camera preview: " + e.getMessage());
         }
-    }
-
-    public static void takeAPicture(){
-
-        Camera.PictureCallback mPictureCallback = new Camera.PictureCallback() {
-            @Override
-            public void onPictureTaken(byte[] data, Camera camera) {
-
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                mBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-            }
-        };
-        mCamera.takePicture(null, null, mPictureCallback);
     }
 }

@@ -1,14 +1,16 @@
 package com.xianwei.pictureframe;
 
 import android.app.Activity;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
+import android.media.CamcorderProfile;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,6 +35,8 @@ public class CameraActivity  extends Activity {
 
     private Camera mCamera;
     private CameraPreview mPreview;
+    private MediaRecorder mMediaRecorder;
+    private boolean isRecording = false;
     private byte[] previewImage;
     @BindView(R.id.button_capture)
     ImageButton captureBtn;
@@ -45,6 +49,11 @@ public class CameraActivity  extends Activity {
         setContentView(R.layout.activity_camera_preview);
         ButterKnife.bind(this);
 
+        View decorView = getWindow().getDecorView();
+        // Hide the status bar.
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
+
         // Create an instance of Camera
         mCamera = getCameraInstance();
 
@@ -55,33 +64,39 @@ public class CameraActivity  extends Activity {
     }
 
     @OnClick(R.id.button_capture)
-    void takeImage(){
-        mCamera.takePicture(null,null, mPicture);
-        switchToSaveBtn();
+    void captureVideo(){
+        if (isRecording) {
+            // stop recording and release camera
+            mMediaRecorder.stop();  // stop the recording
+            releaseMediaRecorder(); // release the MediaRecorder object
+            mCamera.lock();         // take camera access back from MediaRecorder
+            switchToSaveBtn();
+            // inform the user that recording has stopped
+//            setCaptureButtonText("Capture");
+            isRecording = false;
+        } else {
+            // initialize video camera
+            if (prepareVideoRecorder()) {
+                // Camera is available and unlocked, MediaRecorder is prepared,
+                // now you can start recording
+                mMediaRecorder.start();
+
+                // inform the user that recording has started
+//                setCaptureButtonText("Stop");
+                isRecording = true;
+            } else {
+                // prepare didn't work, release the camera
+                releaseMediaRecorder();
+                // inform user
+            }
+        }
     }
+
 
     @OnClick(R.id.button_save)
-    void saveImage(){
-        savePreviewImage();
+    void saveVideo() {
+        Toast.makeText(this,"video saved", Toast.LENGTH_LONG).show();
         finish();
-    }
-
-    private void savePreviewImage() {
-        File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-        if (pictureFile == null){
-            Log.d(TAG, "Error creating media file, check storage permissions:");
-            return;
-        }
-
-        try {
-            FileOutputStream fos = new FileOutputStream(pictureFile);
-            fos.write(previewImage);
-            fos.close();
-        } catch (FileNotFoundException e) {
-            Log.d(TAG, "File not found: " + e.getMessage());
-        } catch (IOException e) {
-            Log.d(TAG, "Error accessing file: " + e.getMessage());
-        }
     }
 
     /** A safe way to get an instance of the Camera object. */
@@ -95,14 +110,6 @@ public class CameraActivity  extends Activity {
         }
         return c; // returns null if camera is unavailable
     }
-
-    private Camera.PictureCallback mPicture = new Camera.PictureCallback() {
-
-        @Override
-        public void onPictureTaken(byte[] data, Camera camera) {
-            previewImage = data;
-        }
-    };
 
     /** Create a File for saving an image or video */
     private static File getOutputMediaFile(int type){
@@ -146,5 +153,67 @@ public class CameraActivity  extends Activity {
     private void switchToCaptureBtn() {
         captureBtn.setVisibility(View.VISIBLE);
         saveBtn.setVisibility(View.INVISIBLE);
+    }
+
+    private boolean prepareVideoRecorder(){
+
+        mCamera = getCameraInstance();
+        mMediaRecorder = new MediaRecorder();
+
+        // Step 1: Unlock and set camera to MediaRecorder
+        mCamera.unlock();
+        mMediaRecorder.setCamera(mCamera);
+
+        // Step 2: Set sources
+        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+
+        // Step 3: Set a CamcorderProfile (requires API Level 8 or higher)
+        mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
+
+        // Step 4: Set output file
+        mMediaRecorder.setOutputFile(getOutputMediaFile(MEDIA_TYPE_VIDEO).toString());
+
+        // Step 5: Set the preview output
+        mMediaRecorder.setPreviewDisplay(mPreview.getHolder().getSurface());
+
+        mMediaRecorder.setMaxDuration(15000);
+
+        // Step 6: Prepare configured MediaRecorder
+        try {
+            mMediaRecorder.prepare();
+        } catch (IllegalStateException e) {
+            Log.d(TAG, "IllegalStateException preparing MediaRecorder: " + e.getMessage());
+            releaseMediaRecorder();
+            return false;
+        } catch (IOException e) {
+            Log.d(TAG, "IOException preparing MediaRecorder: " + e.getMessage());
+            releaseMediaRecorder();
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        releaseMediaRecorder();       // if you are using MediaRecorder, release it first
+        releaseCamera();              // release the camera immediately on pause event
+    }
+
+    private void releaseMediaRecorder(){
+        if (mMediaRecorder != null) {
+            mMediaRecorder.reset();   // clear recorder configuration
+            mMediaRecorder.release(); // release the recorder object
+            mMediaRecorder = null;
+            mCamera.lock();           // lock camera for later use
+        }
+    }
+
+    private void releaseCamera(){
+        if (mCamera != null){
+            mCamera.release();        // release the camera for other applications
+            mCamera = null;
+        }
     }
 }
