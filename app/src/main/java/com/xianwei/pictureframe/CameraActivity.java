@@ -1,6 +1,7 @@
 package com.xianwei.pictureframe;
 
 import android.app.Activity;
+import android.graphics.drawable.ColorDrawable;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
@@ -42,6 +43,10 @@ public class CameraActivity  extends Activity {
     ImageButton captureBtn;
     @BindView(R.id.button_save)
     ImageButton saveBtn;
+    @BindView(R.id.button_back)
+    ImageButton backBtn;
+    @BindView(R.id.button_add_frame)
+    ImageButton addFrameBtn;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -92,11 +97,22 @@ public class CameraActivity  extends Activity {
         }
     }
 
-
     @OnClick(R.id.button_save)
     void saveVideo() {
         Toast.makeText(this,"video saved", Toast.LENGTH_LONG).show();
         finish();
+    }
+
+    @OnClick(R.id.button_back)
+    void backToPreviewActivity(){
+
+    }
+
+    @OnClick(R.id.button_add_frame)
+    void addFrame(){
+        FrameDialog frameDialog = new FrameDialog(this);
+        frameDialog.show();
+        frameDialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
     }
 
     /** A safe way to get an instance of the Camera object. */

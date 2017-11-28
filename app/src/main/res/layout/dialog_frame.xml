@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:id="@+id/layout_black_frame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="15dp">
+
+        <ImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/frame_black" />
+
+        <ImageView
+            android:background="#20000000"
+            android:id="@+id/check_black_frame"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_done"
+            android:visibility="visible" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/layout_red_frame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="15dp"
+        app:layout_constraintStart_toEndOf="@+id/layout_black_frame">
+
+        <ImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/frame_red" />
+
+        <ImageView
+            android:background="#20000000"
+            android:id="@+id/check_red_frame"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_done"
+            android:visibility="invisible" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/layout_green_frame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="15dp"
+        app:layout_constraintTop_toBottomOf="@+id/layout_black_frame">
+
+        <ImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/frame_green" />
+
+        <ImageView
+            android:background="#20000000"
+            android:id="@+id/check_green_frame"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_done"
+            android:visibility="invisible" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/layout_purple_frame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="15dp"
+        app:layout_constraintStart_toEndOf="@+id/layout_green_frame"
+        app:layout_constraintTop_toBottomOf="@+id/layout_red_frame">
+
+        <ImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/frame_purple" />
+
+        <ImageView
+            android:background="#20000000"
+            android:id="@+id/check_purple_frame"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_done"
+            android:visibility="invisible" />
+    </RelativeLayout>
+
+
+</android.support.constraint.ConstraintLayout>
