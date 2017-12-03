@@ -3,8 +3,10 @@
     package="com.xianwei.pictureframe">
 
     <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
+
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
@@ -22,9 +24,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".CameraActivity"
-            android:screenOrientation="landscape"/>
+        <activity
+            android:name=".CameraActivity" />
+        <activity android:name=".SuccessActivity"></activity>
     </application>
 
 </manifest>

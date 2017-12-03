@@ -1,25 +1,34 @@
 package com.xianwei.pictureframe;
 
 import android.app.Activity;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.github.hiteshsondhi88.libffmpeg.ExecuteBinaryResponseHandler;
+import com.github.hiteshsondhi88.libffmpeg.FFmpeg;
+import com.github.hiteshsondhi88.libffmpeg.LoadBinaryResponseHandler;
+import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegCommandAlreadyRunningException;
+import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegNotSupportedException;
+
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Random;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -33,13 +42,16 @@ import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
  * Created by xianwei li on 11/24/2017.
  */
 
-public class CameraActivity  extends Activity {
+public class CameraActivity extends Activity {
 
     private Camera mCamera;
     private CameraPreview mPreview;
     private MediaRecorder mMediaRecorder;
     private boolean isRecording = false;
     private String checkedFrameName = "none";
+    private String preVideoPath;
+    private String videoPath;
+    private FFmpeg ffmpeg;
     @BindView(R.id.button_capture)
     ImageButton captureBtn;
     @BindView(R.id.button_save)
@@ -48,6 +60,10 @@ public class CameraActivity  extends Activity {
     ImageButton backBtn;
     @BindView(R.id.button_add_frame)
     ImageButton addFrameBtn;
+    @BindView(R.id.progressbar)
+    ProgressBar progressBar;
+
+    FrameLayout preview;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -62,17 +78,16 @@ public class CameraActivity  extends Activity {
 
         // Create an instance of Camera
         mCamera = getCameraInstance();
+        mCamera.setDisplayOrientation(90);
 
         // Create our Preview view and set it as the content of our activity.
         mPreview = new CameraPreview(this, mCamera);
-        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+        preview = (FrameLayout) findViewById(R.id.camera_preview);
         preview.addView(mPreview);
-        preview.setForeground(getDrawable(R.drawable.frame_green));
-
     }
 
     @OnClick(R.id.button_capture)
-    void captureVideo(){
+    void captureVideo() {
         if (isRecording) {
             // stop recording and release camera
             mMediaRecorder.stop();  // stop the recording
@@ -102,50 +117,159 @@ public class CameraActivity  extends Activity {
 
     @OnClick(R.id.button_save)
     void saveVideo() {
-        Toast.makeText(this,"video saved", Toast.LENGTH_LONG).show();
-        finish();
+        Toast.makeText(this, "video processing", Toast.LENGTH_LONG).show();
+        progressBar.setVisibility(View.VISIBLE);
+        AsyncTask<Void, Void, Void> task = new AsyncTask() {
+
+            @Override
+            protected Object doInBackground(Object[] objects) {
+                addFrameAndSaveVideo();
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Object o) {
+                super.onPostExecute(o);
+            }
+        };
+        task.execute();
+    }
+
+    private void addFrameAndSaveVideo() {
+        loadFFmpeg();
+        preVideoPath = videoPath;
+        String[] cmdd = new String[] {
+                "-i",
+                videoPath,
+                "-i",
+                "/storage/emulated/0/waterMarker.png",
+                "-filter_complex",
+                "overlay=10:10",
+                getOutputMediaFile(MEDIA_TYPE_VIDEO).toString()};
+        try {
+            ffmpeg.execute(cmdd, new ExecuteBinaryResponseHandler() {
+
+                @Override
+                public void onStart() {}
+
+                @Override
+                public void onProgress(String message) {
+                    Log.i("12345", "onProgress");
+                }
+
+                @Override
+                public void onFailure(String message) {
+                    Log.i("12345", message);
+                }
+
+                @Override
+                public void onSuccess(String message) {
+                    Log.i("12345", "onSuccess");
+                    progressBar.setVisibility(View.INVISIBLE);
+                    Intent intent = new Intent(CameraActivity.this, SuccessActivity.class);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void onFinish() {
+                    Log.i("12345", "onFinish");
+                }
+            });
+        } catch (FFmpegCommandAlreadyRunningException e) {
+            // Handle if FFmpeg is already running
+            Log.i("12345", " FFMPGE execute failed");
+        }
+    }
+
+    private void loadFFmpeg() {
+        ffmpeg = FFmpeg.getInstance(this);
+        try {
+            ffmpeg.loadBinary(new LoadBinaryResponseHandler() {
+
+                @Override
+                public void onStart() {}
+
+                @Override
+                public void onFailure() {}
+
+                @Override
+                public void onSuccess() {
+                    Log.i("12345", "loadonSuccess");
+                }
+
+                @Override
+                public void onFinish() {}
+            });
+        } catch (FFmpegNotSupportedException e) {
+            // Handle if FFmpeg is not supported by device
+            Log.i("12345", " FFMPGE loader failed");
+        }
     }
 
     @OnClick(R.id.button_back)
-    void backToPreviewActivity(){
-
+    void backToPreviewActivity() {
+        if (preVideoPath != null) {
+            File file = new File(preVideoPath);
+            file.delete();
+        }
+        finish();
     }
 
     @OnClick(R.id.button_add_frame)
-    void addFrame(){
-//        FrameDialog frameDialog = new FrameDialog(this);
-//        frameDialog.show();
-//        frameDialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+    void addFrame() {
         FrameDialog frameDialog = FrameDialog.newInstance(checkedFrameName);
         frameDialog.show(getFragmentManager(),"checkFrame");
     }
 
-    /** A safe way to get an instance of the Camera object. */
-    public static Camera getCameraInstance(){
+    public void onSelectValue(String frameName) {
+        checkedFrameName = frameName;
+        Log.i("onSelectValue", frameName);
+        setFrame(frameName);
+    }
+
+    public void setFrame(String name){
+        switch (name) {
+            case "black":
+                preview.setForeground(getDrawable(R.drawable.frame_black));
+                break;
+            case "red":
+                preview.setForeground(getDrawable(R.drawable.frame_red));
+                break;
+            case "green":
+                preview.setForeground(getDrawable(R.drawable.frame_green));
+                break;
+            case "purple":
+                preview.setForeground(getDrawable(R.drawable.frame_purple));
+                break;
+            default:
+                preview.setForeground(null);
+        }
+    }
+
+    /**
+     * A safe way to get an instance of the Camera object.
+     */
+    public static Camera getCameraInstance() {
         Camera c = null;
         try {
             c = Camera.open(); // attempt to get a Camera instance
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             // Camera is not available (in use or does not exist)
         }
         return c; // returns null if camera is unavailable
     }
 
-    /** Create a File for saving an image or video */
-    private static File getOutputMediaFile(int type){
-        // To be safe, you should check that the SDCard is mounted
-        // using Environment.getExternalStorageState() before doing this.
-
+    /**
+     * Create a File for saving an image or video
+     */
+    private static File getOutputMediaFile(int type) {
         File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES), "PictureFrame");
-        // This location works best if you want the created images to be shared
-        // between applications and persist after your app has been uninstalled.
 
         // Create the storage directory if it does not exist
-        if (! mediaStorageDir.exists()){
-            if (! mediaStorageDir.mkdirs()){
-                Log.d("MyCameraApp", "failed to create directory");
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.d("PictureFrame", "failed to create directory");
                 return null;
             }
         }
@@ -153,12 +277,12 @@ public class CameraActivity  extends Activity {
         // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE){
+        if (type == MEDIA_TYPE_IMAGE) {
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_"+ timeStamp + ".jpg");
-        } else if(type == MEDIA_TYPE_VIDEO) {
+                    "frame.jpg");
+        } else if (type == MEDIA_TYPE_VIDEO) {
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "VID_"+ timeStamp + ".mp4");
+                    "VID_" + timeStamp + ".mp4");
         } else {
             return null;
         }
@@ -176,9 +300,10 @@ public class CameraActivity  extends Activity {
         saveBtn.setVisibility(View.INVISIBLE);
     }
 
-    private boolean prepareVideoRecorder(){
+    private boolean prepareVideoRecorder() {
 
         mCamera = getCameraInstance();
+        mCamera.setDisplayOrientation(90);
         mMediaRecorder = new MediaRecorder();
 
         // Step 1: Unlock and set camera to MediaRecorder
@@ -193,7 +318,8 @@ public class CameraActivity  extends Activity {
         mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
 
         // Step 4: Set output file
-        mMediaRecorder.setOutputFile(getOutputMediaFile(MEDIA_TYPE_VIDEO).toString());
+        videoPath = getOutputMediaFile(MEDIA_TYPE_VIDEO).toString();
+        mMediaRecorder.setOutputFile(videoPath);
 
         // Step 5: Set the preview output
         mMediaRecorder.setPreviewDisplay(mPreview.getHolder().getSurface());
@@ -222,7 +348,7 @@ public class CameraActivity  extends Activity {
         releaseCamera();              // release the camera immediately on pause event
     }
 
-    private void releaseMediaRecorder(){
+    private void releaseMediaRecorder() {
         if (mMediaRecorder != null) {
             mMediaRecorder.reset();   // clear recorder configuration
             mMediaRecorder.release(); // release the recorder object
@@ -231,8 +357,8 @@ public class CameraActivity  extends Activity {
         }
     }
 
-    private void releaseCamera(){
-        if (mCamera != null){
+    private void releaseCamera() {
+        if (mCamera != null) {
             mCamera.release();        // release the camera for other applications
             mCamera = null;
         }

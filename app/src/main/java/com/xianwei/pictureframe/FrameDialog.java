@@ -1,6 +1,7 @@
 package com.xianwei.pictureframe;
 
 import android.app.DialogFragment;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import butterknife.BindView;
@@ -37,17 +39,6 @@ public class FrameDialog extends DialogFragment {
     @BindView(R.id.check_purple_frame)
     ImageView purpleFrameCheckBox;
 
-
-//    public FrameDialog(@NonNull Context context) {
-//        super(context);
-//    }
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.dialog_frame);
-//        ButterKnife.bind(this);
-//    }
 
     private String checkedItemName;
 
@@ -90,13 +81,14 @@ public class FrameDialog extends DialogFragment {
 
     @OnClick(R.id.check_black_frame)
     void checkBlackFrame(){
-        Log.i("12345","black clicked");
         if (blackFrameMarker.getVisibility() == View.INVISIBLE) {
             checkedItemName = "black";
             switchToBlackFrame();
         } else {
+            checkedItemName = "none";
             blackFrameMarker.setVisibility(View.INVISIBLE);
         }
+        setFrame(checkedItemName);
     }
 
     private void switchToBlackFrame() {
@@ -108,13 +100,14 @@ public class FrameDialog extends DialogFragment {
 
     @OnClick(R.id.check_red_frame)
     void checkRedFrame(){
-        Log.i("12345","Red clicked");
         if (redFrameMarker.getVisibility() == View.INVISIBLE) {
             checkedItemName = "red";
             switchToRedFrame();
         } else {
+            checkedItemName = "none";
             redFrameMarker.setVisibility(View.INVISIBLE);
         }
+        setFrame(checkedItemName);
     }
 
     private void switchToRedFrame() {
@@ -126,13 +119,14 @@ public class FrameDialog extends DialogFragment {
 
     @OnClick(R.id.check_green_frame)
     void checkGreenFrame(){
-        Log.i("12345","Green clicked");
         if (greenFrameMarker.getVisibility() == View.INVISIBLE) {
             checkedItemName = "green";
             switchToGreenFrame();
         } else {
+            checkedItemName = "none";
             greenFrameMarker.setVisibility(View.INVISIBLE);
         }
+        setFrame(checkedItemName);
     }
 
     private void switchToGreenFrame() {
@@ -148,8 +142,10 @@ public class FrameDialog extends DialogFragment {
             checkedItemName = "purple";
             switchToPurpleFrame();
         } else {
+            checkedItemName = "none";
             purpleFrameMarker.setVisibility(View.INVISIBLE);
         }
+        setFrame(checkedItemName);
     }
 
     private void switchToPurpleFrame() {
@@ -159,7 +155,13 @@ public class FrameDialog extends DialogFragment {
         purpleFrameMarker.setVisibility(View.VISIBLE);
     }
 
-    public String getCheckedItemName() {
-        return checkedItemName;
+    public void setFrame(String checkedItemName){
+        CameraActivity cameraActivity = (CameraActivity) getActivity();
+        cameraActivity.onSelectValue(checkedItemName);
+    }
+
+    @Override
+    public void onDismiss(DialogInterface dialog) {
+        super.onDismiss(dialog);
     }
 }

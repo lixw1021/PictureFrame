@@ -9,11 +9,15 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 
 import java.io.IOException;
+import java.util.List;
 
 import static android.content.ContentValues.TAG;
 
@@ -68,8 +72,31 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // set preview size and make any resize, rotate or
         // reformatting changes here
-
-        // start preview with new settings
+//        Camera.Parameters parameters = mCamera.getParameters();
+//        List<Camera.Size> sizes = parameters.getSupportedPreviewSizes();
+//        Camera.Size optimalSize = getOptimalPreviewSize(sizes, getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels);
+//
+//        parameters.setPreviewSize(optimalSize.width, optimalSize.height);
+//        Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+//
+//        if (display.getRotation() == Surface.ROTATION_0) {
+//            parameters.setPreviewSize(optimalSize.height, optimalSize.width);
+//            mCamera.setDisplayOrientation(90);
+//        }
+//
+//        if (display.getRotation() == Surface.ROTATION_90) {
+//            parameters.setPreviewSize(optimalSize.width, optimalSize.height);
+//        }
+//
+//        if (display.getRotation() == Surface.ROTATION_180) {
+//            parameters.setPreviewSize(optimalSize.height, optimalSize.width);
+//        }
+//
+//        if (display.getRotation() == Surface.ROTATION_270) {
+//            parameters.setPreviewSize(optimalSize.width, optimalSize.height);
+//            mCamera.setDisplayOrientation(180);
+//        }
+//         start preview with new settings
         try {
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
@@ -77,5 +104,39 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         } catch (Exception e) {
             Log.d(TAG, "Error starting camera preview: " + e.getMessage());
         }
+    }
+
+    private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
+        final double ASPECT_TOLERANCE = 0.05;
+        double targetRatio = (double) w/h;
+
+        if (sizes==null) return null;
+
+        Camera.Size optimalSize = null;
+
+        double minDiff = Double.MAX_VALUE;
+
+        int targetHeight = h;
+
+        // Find size
+        for (Camera.Size size : sizes) {
+            double ratio = (double) size.width / size.height;
+            if (Math.abs(ratio - targetRatio) > ASPECT_TOLERANCE) continue;
+            if (Math.abs(size.height - targetHeight) < minDiff) {
+                optimalSize = size;
+                minDiff = Math.abs(size.height - targetHeight);
+            }
+        }
+
+        if (optimalSize == null) {
+            minDiff = Double.MAX_VALUE;
+            for (Camera.Size size : sizes) {
+                if (Math.abs(size.height - targetHeight) < minDiff) {
+                    optimalSize = size;
+                    minDiff = Math.abs(size.height - targetHeight);
+                }
+            }
+        }
+        return optimalSize;
     }
 }
